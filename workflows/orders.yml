@@ -1,0 +1,36 @@
+name: orders
+on:
+  push:
+    branches: [main]
+    paths: ["services/orders/**", "helm/orders/**"]
+permissions: { id-token: write, contents: read }
+env:
+  AWS_REGION: us-east-1
+  CLUSTER: microservices-demo
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Test
+        working-directory: services/orders
+        run: pip install -r requirements.txt && pytest -q
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push
+        run: |
+          IMG=${{ steps.ecr.outputs.registry }}/microservices-demo/orders
+          docker build -t $IMG:${{ github.sha }} services/orders
+          docker push $IMG:${{ github.sha }}
+      - name: Deploy with Helm
+        run: |
+          aws eks update-kubeconfig --name $CLUSTER --region $AWS_REGION
+          helm upgrade --install orders helm/orders \
+            --set image.repository=${{ steps.ecr.outputs.registry }}/microservices-demo/orders \
+            --set image.tag=${{ github.sha }} --wait --timeout 3m
