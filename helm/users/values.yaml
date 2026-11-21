@@ -1,0 +1,17 @@
+replicaCount: 2
+image:
+  repository: ACCOUNT.dkr.ecr.us-east-1.amazonaws.com/microservices-demo/users
+  tag: latest
+service: { port: 80, targetPort: 8000 }
+ingress:
+  enabled: true
+  className: alb
+  path: /users
+autoscaling: { enabled: true, minReplicas: 2, maxReplicas: 6, cpu: 70 }
+resources:
+  requests: { cpu: 100m, memory: 128Mi }
+  limits: { cpu: 500m, memory: 256Mi }
+config:
+  LOG_LEVEL: info
+  
+externalSecret: { enabled: true, key: microservices-demo/db }
