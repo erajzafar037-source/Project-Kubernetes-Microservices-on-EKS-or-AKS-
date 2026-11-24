@@ -1,0 +1,8 @@
+grafana:
+  adminPassword: change-me
+  additionalDataSources:
+    - { name: Loki, type: loki, url: "http://loki:3100", access: proxy }
+  sidecar: { dashboards: { enabled: true } }
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
